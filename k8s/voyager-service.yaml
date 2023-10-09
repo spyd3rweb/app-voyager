@@ -1,0 +1,17 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: voyager-service
+  namespace: minecraft
+spec:
+  #type: ClusterIP
+  selector:
+    app: voyager
+  ports:
+    - port: 5678
+      name: debugpy
+      targetPort: debugpy
+    - port: 3000
+      name: mineflayer
+      targetPort: mineflayer

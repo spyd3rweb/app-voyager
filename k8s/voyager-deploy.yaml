@@ -1,0 +1,91 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voyager
+  namespace: minecraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: voyager
+  template:
+    metadata:
+      labels:
+        app: voyager
+      annotations:
+        debug.cloud.google.com/config: '{
+          "web":{
+          "artifact":"voyager-dev",
+          "runtime":"python",
+          "ports":{"debugpy":5678},
+          "workingDir":"/home/pn/app/"}}'
+    spec:
+      hostname: voyager
+      # Uncomment the below line to disable network isolation for WebRTC connectivity, may show an error if disallowed by the cluster
+      # hostNetwork: true
+      initContainers:
+      - name: chown
+        image: alpine:3
+        # Give (id 1000) permissions a mounted volume
+        # https://github.com/nikolaik/docker-python-nodejs
+        command: [ "/bin/sh" ]
+        args: [ "-c", "chown -R 1000:1000 /data && chown -R 1000:1000 /home/pn/app/logs" ]
+        volumeMounts:
+        - name: minecraft-data
+          subPath: voyager
+          mountPath: /data
+        - mountPath: /home/pn/app/logs
+          subPath: voyager/logs
+          name: minecraft-data
+      containers:
+      - name: voyager
+        image: voyager-dev
+        #imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
+        # If you do not supply command or args for a Container, the defaults defined in the Docker image are used.
+        command: ["/bin/bash"]
+        # args: ["-c", "trap : TERM INT; sleep infinity & wait"]
+        args: ["-c", "python3 -m debugpy --listen 0.0.0.0:5678 voyager_learn.py "]
+        env:
+          - name: MC_HOST
+            value: "fabric-voyager.minecraft.svc.cluster.local"
+          - name: MC_PORT
+            value: "25565"
+          - name: OPENAI_API_KEY
+            value: "sk-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+          - name: OPENAI_API_BASE
+            value: "http://webui.text-gen.svc.cluster.local:5001/v1"
+          - name: SKILL_LIBRARY_DIR
+            value: "/data/skill_library/trial1"
+          - name: YOUR_CKPT_DIR # Do not use the same dir as skill library because new events will still be recorded to ckpt_dir.
+            value: "/data/ckpt/lodestone-codellama-trial1"
+          - name: "RESUME_SKILL_LIBRARY" # Set to "True" to resume skill library from SKILL_LIBRARY_DIR
+            value: "False"
+          - name: YOUR_TASK
+            value: "Craft a diamond pickaxe"
+        ports:
+        - name: mineflayer
+          containerPort: 3000
+          protocol: TCP
+        - name: debugpy
+          containerPort: 5678
+          protocol: TCP
+        resources:
+          limits:
+            memory: 2Gi
+            cpu: "2"
+          requests:
+            memory: 100Mi
+            cpu: 100m
+        volumeMounts:
+        - mountPath: /data
+          subPath: voyager
+          name: minecraft-data
+        - mountPath: /home/pn/app/logs
+          subPath: voyager/logs
+          name: minecraft-data
+      volumes:
+      - name: minecraft-data
+        persistentVolumeClaim:
+          claimName: minecraft-data-pvc

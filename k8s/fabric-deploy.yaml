@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fabric-voyager
+  namespace: minecraft
+  labels:
+    app: fabric-voyager
+spec:
+  selector:
+    matchLabels:
+      app: fabric-voyager
+  template:
+    metadata:
+      labels:
+        app: fabric-voyager
+    spec:
+      volumes:
+        - name: minecraft-data
+          persistentVolumeClaim:
+            claimName: minecraft-data-pvc
+      containers:
+      - name: fabric
+        image: itzg/minecraft-server:latest
+        imagePullPolicy: Always
+        tty: true
+        stdin: true
+        resources:
+          limits:
+            memory: 4Gi
+            cpu: "2"
+          requests:
+            memory: 100Mi
+            cpu: 100m
+        env:
+        - name: EULA
+          value: "true"
+        - name: VERSION
+          value: "1.19.4"
+        - name: TYPE
+          value: FABRIC
+        - name: FABRIC_LAUNCHER_VERSION
+          value: "0.11.2"
+        - name: FABRIC_LOADER_VERSION
+          value: "0.14.22"
+        - name: RCON_PASSWORD
+          value: "Voyager"
+        - name: ONLINE_MODE # use bungeecoord; don't expose to the internet
+          value: "FALSE"
+        - name: MODS
+          value: "https://mediafilez.forgecdn.net/files/4702/953/fabric-api-0.87.0%2B1.19.4.jar,https://cdn-raw.modrinth.com/data/mOgUt4GM/versions/5e62j63G/modmenu-6.1.0-rc.4.jar,https://mediafilez.forgecdn.net/files/4443/781/completeconfig-2.3.1.jar,https://mediafilez.forgecdn.net/files/4618/833/MultiplayerServerPause-1.19.4-Forge-1.1.0.jar,https://mediafilez.forgecdn.net/files/4497/572/better-respawn-fabric-1.19.4-2.0.2.jar"
+          # https://cdn-raw.modrinth.com/data/i7rbL330/versions/jBZO0TVh/serversidereplayrecorder-1.1.5-mc1.19.4.jar
+        volumeMounts:
+          - name: minecraft-data
+            subPath: fabric-voyager
+            mountPath: /data/

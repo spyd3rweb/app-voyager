@@ -1,0 +1,53 @@
+# https://developers.redhat.com/articles/2021/12/13/remote-debugging-kubernetes-using-vs-code
+# https://skaffold.dev/docs/workflows/debug/
+# https://skaffold.dev/docs/tutorials/skaffold-resource-selector/
+# https://skaffold.dev/docs/references/yaml/
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: voyager
+build:
+  artifacts:
+    - image: voyager-dev
+      runtimeType: 'python'
+      docker:
+        dockerfile: 'services/Dockerfile'
+        #cacheFrom:
+        #  - voyager:latest
+      context: .
+      sync:
+        manual:
+        - src: "/Voyager/voyager/"
+          dest: "."
+          strip: "/Voyager/voyager"
+        #auto: true
+    # - image: mineflayer
+    #   runtimeType: 'nodejs'
+    #   docker:
+    #     dockerfile: 'services/mineflayer.Dockerfile'
+    #     #cacheFrom:
+    #     #  - mineflayer:latest
+    #   context: .
+    #   sync:
+    #     manual:
+    #     - src: "Voyager/voyager/env/mineflayer/"
+    #       dest: "."
+    #       strip: "Voyager/voyager/env/mineflayer"
+  local:
+    push: true
+manifests:
+  rawYaml:
+  - k8s/*.yaml
+deploy:
+  kubectl:
+    defaultNamespace: "minecraft"
+#portForward:
+#- namespace: voyager
+#  resourceType: Service
+#  resourceName: voyager-service
+#  port: 5678
+resourceSelector:
+  allow:
+    - groupKind: "Deployment.apps"
+      image: [".*"]
+      labels: [".*"]

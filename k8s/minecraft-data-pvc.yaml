@@ -1,0 +1,70 @@
+---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: minecraft-data-pvc
+#   namespace: minecraft
+#   annotations:
+#     volume.beta.kubernetes.io/storage-class: cephfs-storage-sc
+#     volume.beta.kubernetes.io/storage-provisioner: rook-ceph.cephfs.csi.ceph.com
+# spec:
+#   accessModes:
+#     - ReadWriteMany
+#   resources:
+#     requests:
+#       storage: 10Gi
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: filebrowser
+#   namespace: minecraft
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: filebrowser
+#   template:
+#     metadata:
+#       labels:
+#         app: filebrowser
+#     spec:
+#       #tolerations:
+#       #- key: "nvidia.com/gpu"
+#       #  operator: "Equal"
+#       #  effect: "NoSchedule"
+#       containers:
+#       - name: filebrowser
+#         image: filebrowser/filebrowser:v2
+#         imagePullPolicy: IfNotPresent
+#         args: ["--noauth","-r","/data"]
+#         ports:
+#         - name: browse
+#           containerPort: 80
+#           protocol: TCP
+#         resources:
+#           limits:
+#             memory: 1Gi
+#             cpu: "1"
+#           requests:
+#             memory: 100Mi
+#             cpu: 100m
+#         volumeMounts:
+#         - mountPath: /data
+#           name: minecraft-data
+#       volumes:
+#       - name: minecraft-data
+#         persistentVolumeClaim:
+#           claimName: minecraft-data-pvc
+# ---
+# kind: Service
+# apiVersion: v1
+# metadata:
+#   name: file
+#   namespace: minecraft
+# spec:
+#   selector:
+#     app: filebrowser
+#   ports:
+#     - port: 80
+#       name: browse
