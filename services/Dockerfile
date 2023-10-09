@@ -1,5 +1,5 @@
-FROM registry.airship.cloud/voyager:latest
-
+FROM voyager:latest
+# replace with FROM <myrepo>/voyager:latest
 VOLUME /data
 VOLUME /home/pn/app/logsS
 
